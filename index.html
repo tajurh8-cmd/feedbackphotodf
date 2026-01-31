@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Photo Implementasi Online</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+
+  <style>
+    :root{ --b:#111; }
+    body{ background:#f6f7fb; }
+    .frame{ border:3px solid var(--b); background:#fff; }
+
+    .grid{ border:3px solid var(--b); }
+
+    .cell{
+      border-right:3px solid var(--b);
+      border-bottom:3px solid var(--b);
+      background:#fff;
+      min-height: 170px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .cell:last-child{ border-right:none; }
+
+    .head{
+      border-bottom:3px solid var(--b);
+      font-weight:900;
+      font-size: 13px;
+      text-align:center;
+      padding:6px 4px;
+      background:#fff;
+    }
+
+    .content{
+      height: calc(100% - 38px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
+      padding:8px;
+      font-weight:900;
+      font-size: 14px;
+      line-height:1.15;
+    }
+
+    .content img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+      border-radius: 8px;
+    }
+
+    /* icon kamera */
+    .tap-hint{
+      width:52px;
+      height:52px;
+      border:2px solid #111;
+      border-radius:14px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:26px;
+      opacity:.95;
+    }
+    .add-photo{
+      font-size:12px;
+      font-weight:900;
+      opacity:.7;
+      margin-top:8px;
+    }
+
+    /* logo box putih */
+    .logo-box{
+      background:#fff;
+      border:2px solid #111;
+      border-radius:16px;
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-width:170px;
+      min-height:90px;
+    }
+    .logo-box img{
+      width:150px;
+      max-width:100%;
+      height:auto;
+      display:block;
+    }
+
+    /* HP: grid jadi 2 kolom */
+    @media (max-width: 768px){
+      .grid-row{ grid-template-columns: repeat(2, 1fr) !important; }
+      .cell:nth-child(2n){ border-right:none; }
+      .cell:nth-child(4n){ border-right:3px solid var(--b); }
+      .logo-box{ min-width:140px; }
+      .logo-box img{ width:120px; }
+    }
+
+    @media print{
+      body{ background:#fff; }
+      .btn{ display:none !important; }
+      .frame{ border:3px solid #111; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-3">
+
+    <!-- HOME PAGE -->
+    <div id="pageHome" class="frame rounded-4 p-3">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <div class="h4 mb-0 fw-bold">Pilih Tugas</div>
+          <small class="text-muted fw-semibold">Feedback photo tugas</small>
+        </div>
+        <button id="btnAddTask" class="btn btn-dark fw-bold rounded-3">
+          + Tambah Tugas Baru
+        </button>
+      </div>
+
+      <!-- Form tambah tugas: hanya Nama -->
+      <div id="addTaskForm" class="card border-dark rounded-4 mb-3 d-none">
+        <div class="card-body">
+          <div class="row g-2 align-items-center">
+            <div class="col-12 col-md-8">
+              <input id="inpTaskName" type="text" class="form-control border-dark rounded-3"
+                placeholder="Nama tugas (contoh: Full Display)"/>
+            </div>
+            <div class="col-6 col-md-2 d-grid">
+              <button id="btnSaveTask" class="btn btn-success fw-bold rounded-3">Simpan</button>
+            </div>
+            <div class="col-6 col-md-2 d-grid">
+              <button id="btnCancelTask" class="btn btn-outline-dark fw-bold rounded-3">Batal</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="taskList" class="vstack gap-2">
+        <div class="text-muted fw-bold">Loading...</div>
+      </div>
+    </div>
+
+    <!-- GRID PAGE -->
+    <div id="pageGrid" class="frame rounded-4 p-3 d-none">
+      <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+        <div>
+          <div class="h3 fw-bold mb-1">Photo Implementasi</div>
+          <div class="fw-semibold">TUGAS : <span id="lblTask" class="fw-bold">-</span></div>
+          <div class="fw-semibold">AC : <span id="lblAC" class="fw-bold">-</span></div>
+          <div class="fw-semibold">TANGGAL : <span id="lblDate" class="fw-bold">-</span></div>
+        </div>
+
+        <div class="logo-box">
+          <img src="alfamart-bersatu.png" alt="Alfamart Bersatu">
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-between gap-2 flex-wrap mt-3">
+        <button id="btnBack" class="btn btn-outline-dark fw-bold rounded-3">← Kembali</button>
+        <button onclick="window.print()" class="btn btn-dark fw-bold rounded-3">Print / Save PDF</button>
+      </div>
+
+      <div class="mt-3 grid rounded-4 overflow-hidden" id="grid"></div>
+
+      <input id="filePicker" type="file" accept="image/*" class="d-none"/>
+    </div>
+
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import {
+      getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc,
+      onSnapshot, query, orderBy, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+
+    // config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBdY1mTpiosbYwTIyBN95QLrTjk-jMZgN8",
+      authDomain: "pencariandataft.firebaseapp.com",
+      projectId: "pencariandataft",
+      storageBucket: "pencariandataft.firebasestorage.app",
+      messagingSenderId: "154970809034",
+      appId: "1:154970809034:web:82b9c68566e21099230a33",
+      measurementId: "G-Y0YLDT8BB2"
+    };
+
+    // defaults
+    const DEFAULT_AC = "DIAN FAHMI SUGIAR";
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // master toko
+    const STORES = [
+      { code:"1PQ7", label:"PRKE", name:"PRAMUKA KETAPANG" },
+      { code:"1PI6", label:"SAND", name:"SANDAI" },
+      { code:"1PW9", label:"IJSI", name:"ISTANA JAYA SANDAI" },
+      { code:"1P3V", label:"ZAFS", name:"ZAINUDDIN SANDAI/F" },
+      { code:"1P4I", label:"RYND", name:"RAYA SANDAI" },
+      { code:"1P5J", label:"RYIS", name:"RAYA ISTANA" },
+      { code:"1P7Q", label:"PMKS", name:"PAMUKA SANDAI" },
+      { code:"1PQ9", label:"LAKU", name:"BALAI BERKUAK" },
+      { code:"1P5F", label:"BPNG", name:"BALAI PINANG/F" },
+      { code:"1PV7", label:"SGLR", name:"SUNGAI LAUR" },
+      { code:"1P4M", label:"SMDG", name:"SEMANDANG KANAN" },
+      { code:"1P5I", label:"RAND", name:"RANDAU" },
+      { code:"1P5U", label:"RIBU", name:"RIAM BUNUT" },
+      { code:"1P7O", label:"SGHL", name:"SIMPANG HULU" },
+      { code:"1P6T", label:"RNTY", name:"RAYA NANGA TAYAP" },
+      { code:"1PI7", label:"NATA", name:"NANGA TAYAP" },
+      { code:"1P9J", label:"BTGF", name:"BATANG GERAI KTP" }
+    ];
+
+    // UI
+    const pageHome = document.getElementById("pageHome");
+    const pageGrid = document.getElementById("pageGrid");
+    const taskList = document.getElementById("taskList");
+
+    const btnAddTask = document.getElementById("btnAddTask");
+    const addTaskForm = document.getElementById("addTaskForm");
+    const inpTaskName = document.getElementById("inpTaskName");
+    const btnSaveTask = document.getElementById("btnSaveTask");
+    const btnCancelTask = document.getElementById("btnCancelTask");
+
+    const lblTask = document.getElementById("lblTask");
+    const lblAC = document.getElementById("lblAC");
+    const lblDate = document.getElementById("lblDate");
+
+    const btnBack = document.getElementById("btnBack");
+    const grid = document.getElementById("grid");
+    const filePicker = document.getElementById("filePicker");
+
+    // state
+    let currentTaskId = null;
+    let currentStoreCode = null;
+    let unsubPhotos = null;
+
+    // tanggal hari ini dd/mm/yyyy
+    function today(){
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = d.getFullYear();
+      return `${dd}/${mm}/${yy}`;
+    }
+
+    // HOME
+    btnAddTask.onclick = () => {
+      addTaskForm.classList.remove("d-none");
+      inpTaskName.value = "";
+      inpTaskName.focus();
+    };
+    btnCancelTask.onclick = () => addTaskForm.classList.add("d-none");
+
+    btnSaveTask.onclick = async () => {
+      const name = inpTaskName.value.trim();
+      if(!name) return alert("Nama tugas wajib diisi");
+
+      await addDoc(collection(db, "tasks"), {
+        name,
+        ac: DEFAULT_AC,
+        date: today(),
+        createdAt: serverTimestamp()
+      });
+
+      addTaskForm.classList.add("d-none");
+    };
+
+    function renderTasks(tasks){
+      taskList.innerHTML = "";
+      if(tasks.length === 0){
+        taskList.innerHTML = `<div class="text-muted fw-bold">Belum ada tugas. Klik + Tambah Tugas Baru.</div>`;
+        return;
+      }
+
+      tasks.forEach(t=>{
+        const el = document.createElement("div");
+        el.className = "card border-dark rounded-4";
+        el.innerHTML = `
+          <div class="card-body py-3 d-flex align-items-center justify-content-between gap-2 flex-wrap">
+            <div>
+              <div class="fw-bold fs-5">${t.name}</div>
+              <div class="text-muted fw-semibold" style="font-size:12px;">ID: ${t.id}</div>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-dark fw-bold rounded-3" data-open="${t.id}">Buka</button>
+              <button class="btn btn-outline-danger fw-bold rounded-3" data-del="${t.id}">Hapus</button>
+            </div>
+          </div>
+        `;
+        taskList.appendChild(el);
+      });
+
+      taskList.querySelectorAll("button[data-open]").forEach(btn=>{
+        btn.onclick = ()=> openTask(btn.getAttribute("data-open"));
+      });
+      taskList.querySelectorAll("button[data-del]").forEach(btn=>{
+        btn.onclick = ()=> deleteTask(btn.getAttribute("data-del"));
+      });
+    }
+
+    async function deleteTask(taskId){
+      if(!confirm("Hapus tugas ini? (File foto di Storage tidak auto terhapus)")) return;
+      await deleteDoc(doc(db, "tasks", taskId));
+    }
+
+    // realtime tasks
+    const qTasks = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
+    onSnapshot(qTasks, (snap)=>{
+      const tasks = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+      renderTasks(tasks);
+    });
+
+    // GRID
+    btnBack.onclick = ()=>{
+      if(unsubPhotos) unsubPhotos();
+      unsubPhotos = null;
+      currentTaskId = null;
+      currentStoreCode = null;
+      pageGrid.classList.add("d-none");
+      pageHome.classList.remove("d-none");
+    };
+
+    async function openTask(taskId){
+      currentTaskId = taskId;
+
+      const all = await getDocs(query(collection(db, "tasks")));
+      const tdoc = all.docs.find(d=>d.id === taskId);
+      if(!tdoc) return;
+
+      const task = { id: tdoc.id, ...tdoc.data() };
+
+      lblTask.textContent = task.name;
+      lblAC.textContent = task.ac || DEFAULT_AC;
+      lblDate.textContent = task.date || today();
+
+      pageHome.classList.add("d-none");
+      pageGrid.classList.remove("d-none");
+
+      buildGrid({});
+
+      const photosRef = collection(db, "tasks", currentTaskId, "photos");
+      unsubPhotos = onSnapshot(photosRef, (snap)=>{
+        const map = {};
+        snap.docs.forEach(d=>{
+          map[d.id] = d.data().url;
+        });
+        buildGrid(map);
+      });
+    }
+
+    function buildGrid(photoMap){
+      grid.innerHTML = "";
+
+      for(let i=0;i<STORES.length;i+=4){
+        const row = document.createElement("div");
+        row.className = "grid-row";
+        row.style.display = "grid";
+        row.style.gridTemplateColumns = "repeat(4, 1fr)";
+
+        const chunk = STORES.slice(i,i+4);
+
+        chunk.forEach(store=>{
+          const url = photoMap[store.code];
+
+          const cell = document.createElement("div");
+          cell.className = "cell";
+
+          cell.innerHTML = `
+            <div class="head">${store.code} ${store.label}</div>
+            <div class="content">
+              ${url
+                ? `<img src="${url}" alt="${store.code}">`
+                : `<div>
+                     <div class="tap-hint">📷</div>
+                     <div class="add-photo">Add Photo</div>
+                   </div>`
+              }
+            </div>
+          `;
+
+          cell.onclick = ()=>{
+            currentStoreCode = store.code;
+            filePicker.value = "";
+            filePicker.click();
+          };
+
+          row.appendChild(cell);
+        });
+
+        // filler blank sampai 4 kolom
+        const missing = 4 - chunk.length;
+        for(let k=0;k<missing;k++){
+          const blank = document.createElement("div");
+          blank.className = "cell";
+          blank.innerHTML = `<div class="head">&nbsp;</div><div class="content">&nbsp;</div>`;
+          row.appendChild(blank);
+        }
+
+        grid.appendChild(row);
+      }
+    }
+
+    filePicker.onchange = async (e)=>{
+      const file = e.target.files?.[0];
+      if(!file || !currentTaskId || !currentStoreCode) return;
+
+      const path = `photos/${currentTaskId}/${currentStoreCode}.jpg`;
+      const storageRef = ref(storage, path);
+
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      await setDoc(doc(db, "tasks", currentTaskId, "photos", currentStoreCode), {
+        storeCode: currentStoreCode,
+        label: STORES.find(s=>s.code===currentStoreCode)?.label || "",
+        storeName: STORES.find(s=>s.code===currentStoreCode)?.name || "",
+        url,
+        updatedAt: serverTimestamp()
+      }, { merge:true });
+
+      alert("Upload OK ✅");
+    };
+  </script>
+</body>
+</html>
