@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Photo Implementasi Online</title>
 
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
   <style>
@@ -14,7 +13,6 @@
     .frame{ border:3px solid var(--b); background:#fff; }
 
     .grid{ border:3px solid var(--b); }
-
     .cell{
       border-right:3px solid var(--b);
       border-bottom:3px solid var(--b);
@@ -54,7 +52,7 @@
       border-radius: 8px;
     }
 
-    /* icon kamera */
+    /* icon kamera + add photo */
     .tap-hint{
       width:52px;
       height:52px;
@@ -92,7 +90,7 @@
       display:block;
     }
 
-    /* HP: grid jadi 2 kolom */
+    /* default di HP -> 2 kolom */
     @media (max-width: 768px){
       .grid-row{ grid-template-columns: repeat(2, 1fr) !important; }
       .cell:nth-child(2n){ border-right:none; }
@@ -106,10 +104,45 @@
       .btn{ display:none !important; }
       .frame{ border:3px solid #111; }
     }
+
+    /* =========================
+       MODE SWITCH (Normal/Compact/Ultra)
+       ========================= */
+    body.mode-normal { }
+    body.mode-compact { }
+    body.mode-ultra { }
+
+    /* Compact (semua device) */
+    body.mode-compact .cell{ min-height: 125px; }
+    body.mode-compact .head{ font-size: 11px; padding:4px 3px; border-bottom-width:2px; }
+    body.mode-compact .content{ height: calc(100% - 30px); padding:5px; font-size: 12px; }
+    body.mode-compact .tap-hint{ width:42px; height:42px; font-size:22px; border-radius:12px; }
+    body.mode-compact .add-photo{ font-size:10px; margin-top:6px; }
+    body.mode-compact .grid{ border-width:2px; }
+    body.mode-compact .cell{ border-right-width:2px; border-bottom-width:2px; }
+    body.mode-compact .content img{ border-radius: 6px; }
+
+    /* Ultra: rapat + lebih kecil */
+    body.mode-ultra .cell{ min-height: 92px; }
+    body.mode-ultra .head{ font-size: 9px; padding:2px 1px; border-bottom-width:2px; }
+    body.mode-ultra .content{ height: calc(100% - 24px); padding:2px; font-size: 9px; }
+    body.mode-ultra .tap-hint{ width:28px; height:28px; font-size:14px; border-radius:9px; border-width:1.5px; }
+    body.mode-ultra .add-photo{ font-size:8px; margin-top:3px; letter-spacing:.1px; }
+    body.mode-ultra .grid{ border-width:2px; }
+    body.mode-ultra .cell{ border-right-width:2px; border-bottom-width:2px; }
+    body.mode-ultra .content img{ border-radius: 4px; }
+
+    /* Ultra + HP: paksa 4 kolom */
+    @media (max-width: 768px){
+      body.mode-ultra .grid-row{ grid-template-columns: repeat(4, 1fr) !important; }
+      body.mode-ultra .cell:nth-child(2n){ border-right-width:2px; }
+      body.mode-ultra .cell:nth-child(4n){ border-right:none !important; }
+    }
+
   </style>
 </head>
 
-<body>
+<body class="mode-normal">
   <div class="container py-3">
 
     <!-- HOME PAGE -->
@@ -117,14 +150,14 @@
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <div>
           <div class="h4 mb-0 fw-bold">Pilih Tugas</div>
-          <small class="text-muted fw-semibold">Feedback photo tugas</small>
+          <small class="text-muted fw-semibold">Online (Firestore + Storage)</small>
         </div>
         <button id="btnAddTask" class="btn btn-dark fw-bold rounded-3">
           + Tambah Tugas Baru
         </button>
       </div>
 
-      <!-- Form tambah tugas: hanya Nama -->
+      <!-- Form tambah tugas -->
       <div id="addTaskForm" class="card border-dark rounded-4 mb-3 d-none">
         <div class="card-body">
           <div class="row g-2 align-items-center">
@@ -162,9 +195,21 @@
         </div>
       </div>
 
+      <!-- toolbar -->
       <div class="d-flex justify-content-between gap-2 flex-wrap mt-3">
         <button id="btnBack" class="btn btn-outline-dark fw-bold rounded-3">← Kembali</button>
-        <button onclick="window.print()" class="btn btn-dark fw-bold rounded-3">Print / Save PDF</button>
+
+        <div class="d-flex gap-2 flex-wrap">
+          <!-- Mode Switch -->
+          <div class="btn-group" role="group" aria-label="Mode">
+            <button id="btnModeNormal" class="btn btn-outline-dark fw-bold">Normal</button>
+            <button id="btnModeCompact" class="btn btn-outline-dark fw-bold">Compact</button>
+            <button id="btnModeUltra" class="btn btn-outline-dark fw-bold">Ultra</button>
+          </div>
+
+          <button id="btnReset" class="btn btn-outline-danger fw-bold rounded-3">Reset</button>
+          <button onclick="window.print()" class="btn btn-dark fw-bold rounded-3">Print / Save PDF</button>
+        </div>
       </div>
 
       <div class="mt-3 grid rounded-4 overflow-hidden" id="grid"></div>
@@ -174,19 +219,19 @@
 
   </div>
 
-  <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
       getFirestore, collection, doc, getDocs, setDoc, addDoc, deleteDoc,
-      onSnapshot, query, orderBy, serverTimestamp
+      onSnapshot, query, orderBy, serverTimestamp, writeBatch
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
+    import {
+      getStorage, ref, uploadBytes, getDownloadURL, deleteObject
+    } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
-    // config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyBdY1mTpiosbYwTIyBN95QLrTjk-jMZgN8",
       authDomain: "pencariandataft.firebaseapp.com",
@@ -197,14 +242,14 @@
       measurementId: "G-Y0YLDT8BB2"
     };
 
-    // defaults
     const DEFAULT_AC = "DIAN FAHMI SUGIAR";
+    const RESET_USER = "admin";
+    const RESET_PASS = "admin";
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    // master toko
     const STORES = [
       { code:"1PQ7", label:"PRKE", name:"PRAMUKA KETAPANG" },
       { code:"1PI6", label:"SAND", name:"SANDAI" },
@@ -241,15 +286,19 @@
     const lblDate = document.getElementById("lblDate");
 
     const btnBack = document.getElementById("btnBack");
+    const btnReset = document.getElementById("btnReset");
     const grid = document.getElementById("grid");
     const filePicker = document.getElementById("filePicker");
 
-    // state
+    // mode buttons
+    const btnModeNormal = document.getElementById("btnModeNormal");
+    const btnModeCompact = document.getElementById("btnModeCompact");
+    const btnModeUltra = document.getElementById("btnModeUltra");
+
     let currentTaskId = null;
     let currentStoreCode = null;
     let unsubPhotos = null;
 
-    // tanggal hari ini dd/mm/yyyy
     function today(){
       const d = new Date();
       const dd = String(d.getDate()).padStart(2,'0');
@@ -257,6 +306,25 @@
       const yy = d.getFullYear();
       return `${dd}/${mm}/${yy}`;
     }
+
+    // ===== MODE SWITCH =====
+    function setMode(mode){
+      document.body.classList.remove("mode-normal","mode-compact","mode-ultra");
+      document.body.classList.add(`mode-${mode}`);
+      localStorage.setItem("gridMode", mode);
+      // UI active look
+      [btnModeNormal,btnModeCompact,btnModeUltra].forEach(b=>b.classList.remove("btn-dark"));
+      [btnModeNormal,btnModeCompact,btnModeUltra].forEach(b=>b.classList.add("btn-outline-dark"));
+      if(mode==="normal"){ btnModeNormal.classList.add("btn-dark"); btnModeNormal.classList.remove("btn-outline-dark"); }
+      if(mode==="compact"){ btnModeCompact.classList.add("btn-dark"); btnModeCompact.classList.remove("btn-outline-dark"); }
+      if(mode==="ultra"){ btnModeUltra.classList.add("btn-dark"); btnModeUltra.classList.remove("btn-outline-dark"); }
+    }
+    btnModeNormal.onclick = ()=> setMode("normal");
+    btnModeCompact.onclick = ()=> setMode("compact");
+    btnModeUltra.onclick  = ()=> setMode("ultra");
+
+    // load last mode
+    setMode(localStorage.getItem("gridMode") || "normal");
 
     // HOME
     btnAddTask.onclick = () => {
@@ -325,7 +393,7 @@
       renderTasks(tasks);
     });
 
-    // GRID
+    // back
     btnBack.onclick = ()=>{
       if(unsubPhotos) unsubPhotos();
       unsubPhotos = null;
@@ -333,6 +401,43 @@
       currentStoreCode = null;
       pageGrid.classList.add("d-none");
       pageHome.classList.remove("d-none");
+    };
+
+    // reset
+    btnReset.onclick = async () => {
+      if(!currentTaskId) return;
+
+      const u = prompt("Reset Authorization\nUsername:");
+      if(u === null) return;
+
+      const p = prompt("Password:");
+      if(p === null) return;
+
+      if(u !== RESET_USER || p !== RESET_PASS){
+        alert("Akses ditolak ❌");
+        return;
+      }
+
+      if(!confirm("RESET akan menghapus semua foto pada tugas ini. Lanjut?")) return;
+
+      try {
+        const photosRef = collection(db, "tasks", currentTaskId, "photos");
+        const snap = await getDocs(photosRef);
+
+        const batch = writeBatch(db);
+        snap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        for (const s of STORES) {
+          const fref = ref(storage, `photos/${currentTaskId}/${s.code}.jpg`);
+          await deleteObject(fref).catch(()=>{});
+        }
+
+        alert("Reset sukses ✅");
+      } catch (err) {
+        console.error(err);
+        alert("Reset gagal ❌ (cek console)");
+      }
     };
 
     async function openTask(taskId){
@@ -402,7 +507,6 @@
           row.appendChild(cell);
         });
 
-        // filler blank sampai 4 kolom
         const missing = 4 - chunk.length;
         for(let k=0;k<missing;k++){
           const blank = document.createElement("div");
