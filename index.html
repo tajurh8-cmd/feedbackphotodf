@@ -3,36 +3,35 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Photo Implementasi Tugas</title>
+  <title>Photo Implementasi Online</title>
 
   <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
 
-  <!-- html2canvas (download image) -->
+  <!-- html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-  <!-- Firebase COMPAT (NO MODULE) -->
+  <!-- Firebase COMPAT -->
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-storage-compat.js"></script>
 
   <style>
-    :root{ --b:#111; }
+    :root{ --b:#111; --cellH: 86px; }
     body{ background:#f6f7fb; }
 
     .frame{ border:3px solid var(--b); background:#fff; border-radius:18px; }
-
     .grid{ border:3px solid var(--b); border-radius:18px; overflow:hidden; }
-    .grid-row{ display:flex; width:100%; } /* stable capture on android */
 
+    .grid-row{ display:flex; width:100%; align-items:stretch; }
     .cell{
-      width:25%;
+      flex:1; min-width:0;
       border-right:3px solid var(--b);
       border-bottom:3px solid var(--b);
       background:#fff;
-      min-height:86px;
       cursor:pointer;
       user-select:none;
+      min-height: var(--cellH);
     }
     .grid-row .cell:last-child{ border-right:none !important; }
 
@@ -46,15 +45,14 @@
     }
 
     .content{
-      height: calc(100% - 24px);
       display:flex;
       align-items:center;
       justify-content:center;
       text-align:center;
       padding:2px;
       font-weight:900;
-      font-size:9px;
       line-height:1.15;
+      height: calc(var(--cellH) - 24px);
     }
 
     .content img{
@@ -75,7 +73,12 @@
       font-size:14px;
       opacity:.95;
     }
-    .add-photo{ font-size:8px; font-weight:900; opacity:.75; margin-top:3px; }
+    .add-photo{
+      font-size:8px;
+      font-weight:900;
+      opacity:.75;
+      margin-top:3px;
+    }
 
     .logo-box{
       background:#fff;
@@ -85,15 +88,20 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      min-width:110px;
-      min-height:60px;
+      min-width:105px;
+      min-height:58px;
     }
-    .logo-box img{ width:85px; height:auto; display:block; }
+    .logo-box img{ width:82px; height:auto; display:block; }
 
     /* Floating */
     .fab{
-      position:fixed; right:12px; bottom:12px; z-index:9999;
-      display:flex; flex-direction:column; gap:8px;
+      position:fixed;
+      right:12px;
+      bottom:12px;
+      z-index:9999;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
     }
     .fab .btn{
       padding:8px 12px !important;
@@ -103,22 +111,25 @@
       box-shadow:0 6px 18px rgba(0,0,0,.15);
     }
 
-    /* MODE */
-    body.mode-ultra .cell{ min-height:86px; }
-    body.mode-compact .cell{ min-height:125px; }
-    body.mode-normal .cell{ min-height:170px; }
-
-    body.mode-normal .head{ font-size:13px; padding:6px 4px; border-bottom-width:3px; }
-    body.mode-normal .content{ height: calc(100% - 38px); padding:8px; font-size:14px; }
-    body.mode-normal .tap-hint{ width:52px;height:52px;font-size:26px;border-radius:14px;border-width:2px; }
-    body.mode-normal .add-photo{ font-size:12px;margin-top:8px; }
-    body.mode-normal .content img{ border-radius:8px; }
+    /* modes */
+    body.mode-ultra { --cellH: 86px; }
+    body.mode-compact{ --cellH: 125px; }
+    body.mode-normal { --cellH: 170px; }
 
     body.mode-compact .head{ font-size:11px; padding:4px 3px; border-bottom-width:2px; }
-    body.mode-compact .content{ height: calc(100% - 30px); padding:5px; font-size:12px; }
+    body.mode-normal  .head{ font-size:13px; padding:6px 4px; border-bottom-width:3px; }
+
+    body.mode-compact .content{ height: calc(125px - 30px); padding:5px; }
+    body.mode-normal  .content{ height: calc(170px - 38px); padding:8px; }
+
     body.mode-compact .tap-hint{ width:42px;height:42px;font-size:22px;border-radius:12px;border-width:2px; }
+    body.mode-normal  .tap-hint{ width:52px;height:52px;font-size:26px;border-radius:14px;border-width:2px; }
+
     body.mode-compact .add-photo{ font-size:10px;margin-top:6px; }
+    body.mode-normal  .add-photo{ font-size:12px;margin-top:8px; }
+
     body.mode-compact .content img{ border-radius:6px; }
+    body.mode-normal  .content img{ border-radius:8px; }
   </style>
 </head>
 
@@ -159,6 +170,7 @@
 
     <!-- GRID -->
     <div id="pageGrid" class="frame p-3 d-none">
+      <!-- CAPTURE AREA ONLY -->
       <div id="reportArea">
         <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
           <div>
@@ -182,15 +194,13 @@
 
       <input id="filePicker" type="file" accept="image/*" class="d-none"/>
     </div>
-
   </div>
 
-  <!-- Floating -->
+  <!-- Floating Buttons -->
   <div class="fab d-none" id="fab">
     <button id="btnModeNormal" class="btn btn-outline-dark">Normal</button>
     <button id="btnModeCompact" class="btn btn-outline-dark">Compact</button>
     <button id="btnModeUltra" class="btn btn-dark">Ultra</button>
-
     <button id="btnReset" class="btn btn-outline-danger">Reset</button>
     <button id="btnSendWA" class="btn btn-dark">Send WA (Image)</button>
   </div>
@@ -221,14 +231,87 @@
     ];
 
     // =========================
-    // INIT FIREBASE (compat)
+    // INIT FIREBASE
     // =========================
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const storage = firebase.storage();
 
     // =========================
-    // UI
+    // IDB CACHE (ANTI BLANK)
+    // =========================
+    const IDB_NAME = "photoImplementasiDB";
+    const IDB_STORE = "images";
+
+    function idbOpen(){
+      return new Promise((resolve, reject)=>{
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = (e)=>{
+          const dbi=e.target.result;
+          if(!dbi.objectStoreNames.contains(IDB_STORE)) dbi.createObjectStore(IDB_STORE);
+        };
+        req.onsuccess=()=>resolve(req.result);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+    async function idbSet(key, blob){
+      const dbi=await idbOpen();
+      return new Promise((resolve,reject)=>{
+        const tx=dbi.transaction(IDB_STORE,"readwrite");
+        tx.objectStore(IDB_STORE).put(blob,key);
+        tx.oncomplete=()=>resolve(true);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+    async function idbGet(key){
+      const dbi=await idbOpen();
+      return new Promise((resolve,reject)=>{
+        const tx=dbi.transaction(IDB_STORE,"readonly");
+        const req=tx.objectStore(IDB_STORE).get(key);
+        req.onsuccess=()=>resolve(req.result||null);
+        req.onerror=()=>reject(req.error);
+      });
+    }
+    async function idbDel(key){
+      const dbi=await idbOpen();
+      return new Promise((resolve,reject)=>{
+        const tx=dbi.transaction(IDB_STORE,"readwrite");
+        tx.objectStore(IDB_STORE).delete(key);
+        tx.oncomplete=()=>resolve(true);
+        tx.onerror=()=>reject(tx.error);
+      });
+    }
+
+    function cacheKey(taskId, storeCode){ return `task:${taskId}:store:${storeCode}`; }
+
+    async function storageGetBlob(taskId, storeCode){
+      const ref = storage.ref(`photos/${taskId}/${storeCode}.jpg`);
+      return await ref.getBlob(); // ✅ NO CORS
+    }
+
+    async function getLocalImageURL(taskId, storeCode){
+      const blob = await idbGet(cacheKey(taskId, storeCode));
+      if(!blob) return null;
+      return URL.createObjectURL(blob);
+    }
+
+    async function waitImagesReady(rootEl){
+      const imgs = Array.from(rootEl.querySelectorAll("img"));
+      await Promise.all(imgs.map(async (img)=>{
+        try{
+          if(!img.complete){
+            await new Promise(res=>{
+              img.onload=()=>res();
+              img.onerror=()=>res();
+            });
+          }
+          if(img.decode) await img.decode().catch(()=>{});
+        }catch(e){}
+      }));
+    }
+
+    // =========================
+    // UI VARS
     // =========================
     const pageHome = document.getElementById("pageHome");
     const pageGrid = document.getElementById("pageGrid");
@@ -256,9 +339,9 @@
     const btnReset = document.getElementById("btnReset");
     const btnSendWA = document.getElementById("btnSendWA");
 
-    let currentTaskId = null;
-    let currentStoreCode = null;
-    let unsubPhotos = null;
+    let currentTaskId=null;
+    let currentStoreCode=null;
+    let unsubPhotos=null;
 
     // =========================
     // HELPERS
@@ -284,36 +367,66 @@
       act.classList.add("btn-dark");
       act.classList.remove("btn-outline-dark");
     }
-
     setMode(localStorage.getItem("gridMode") || "ultra");
     btnModeNormal.onclick=()=>setMode("normal");
     btnModeCompact.onclick=()=>setMode("compact");
     btnModeUltra.onclick =()=>setMode("ultra");
 
     // =========================
-    // GRID BUILD
+    // GRID BUILDER
     // =========================
-    function buildGrid(photoMap){
+    async function buildGrid(photoMap){
       grid.innerHTML="";
+
       for(let i=0;i<STORES.length;i+=4){
         const row=document.createElement("div");
         row.className="grid-row";
 
         const chunk=STORES.slice(i,i+4);
-        chunk.forEach(store=>{
-          const url=photoMap[store.code];
+
+        for(const store of chunk){
+          const remoteURL = photoMap[store.code] || null;
+
           const cell=document.createElement("div");
           cell.className="cell";
 
-          cell.innerHTML=`
-            <div class="head">${store.code} ${store.label}</div>
-            <div class="content">
-              ${url
-                ? `<img src="${url}">`
-                : `<div><div class="tap-hint">📷</div><div class="add-photo">Add Photo</div></div>`
-              }
-            </div>
-          `;
+          const head=document.createElement("div");
+          head.className="head";
+          head.textContent=`${store.code} ${store.label}`;
+
+          const content=document.createElement("div");
+          content.className="content";
+
+          // local blob first
+          let localURL = null;
+          if(currentTaskId) localURL = await getLocalImageURL(currentTaskId, store.code);
+
+          if(localURL){
+            const img=document.createElement("img");
+            img.src=localURL;
+            content.appendChild(img);
+          } else if(remoteURL){
+            const img=document.createElement("img");
+            img.src=remoteURL;
+            content.appendChild(img);
+
+            // cache via storage sdk
+            (async ()=>{
+              try{
+                const key=cacheKey(currentTaskId, store.code);
+                const cached=await idbGet(key);
+                if(!cached){
+                  const blob=await storageGetBlob(currentTaskId, store.code);
+                  await idbSet(key, blob);
+                }
+              }catch(e){}
+            })();
+          } else {
+            content.innerHTML=`<div><div class="tap-hint">📷</div><div class="add-photo">Add Photo</div></div>`;
+          }
+
+          cell.appendChild(head);
+          cell.appendChild(content);
 
           cell.onclick=()=>{
             currentStoreCode=store.code;
@@ -322,7 +435,7 @@
           };
 
           row.appendChild(cell);
-        });
+        }
 
         while(row.children.length<4){
           const blank=document.createElement("div");
@@ -336,19 +449,21 @@
     }
 
     // =========================
-    // RESET PHOTOS
+    // RESET
     // =========================
     async function resetTaskPhotos(taskId){
       const photosRef = db.collection("tasks").doc(taskId).collection("photos");
       const snap = await photosRef.get();
 
-      const batch = db.batch();
-      snap.forEach(docu => batch.delete(docu.ref));
+      const batch=db.batch();
+      snap.forEach(d=>batch.delete(d.ref));
       await batch.commit();
 
       for(const s of STORES){
-        const fileRef = storage.ref(`photos/${taskId}/${s.code}.jpg`);
-        await fileRef.delete().catch(()=>{});
+        await storage.ref(`photos/${taskId}/${s.code}.jpg`).delete().catch(()=>{});
+      }
+      for(const s of STORES){
+        await idbDel(cacheKey(taskId, s.code)).catch(()=>{});
       }
     }
 
@@ -358,40 +473,39 @@
     async function openTask(taskId){
       currentTaskId=taskId;
 
-      const tdoc = await db.collection("tasks").doc(taskId).get();
+      const tdoc=await db.collection("tasks").doc(taskId).get();
       if(!tdoc.exists) return;
 
-      const task = tdoc.data();
-      const tdy = today();
-      const lastDate = task.date || "";
+      const task=tdoc.data();
+      const tdy=today();
 
-      if(lastDate !== tdy){
+      if((task.date||"")!==tdy){
         await resetTaskPhotos(taskId);
-        await db.collection("tasks").doc(taskId).update({ date: tdy });
-        task.date = tdy;
+        await db.collection("tasks").doc(taskId).update({date:tdy});
+        task.date=tdy;
       }
 
       lblTask.textContent=task.name;
-      lblAC.textContent=task.ac || DEFAULT_AC;
-      lblDate.textContent=task.date || tdy;
+      lblAC.textContent=task.ac||DEFAULT_AC;
+      lblDate.textContent=task.date||tdy;
 
       pageHome.classList.add("d-none");
       pageGrid.classList.remove("d-none");
       fab.classList.remove("d-none");
 
-      buildGrid({});
+      await buildGrid({});
 
       if(unsubPhotos) unsubPhotos();
       unsubPhotos = db.collection("tasks").doc(taskId).collection("photos")
-        .onSnapshot((snap)=>{
-          const map = {};
-          snap.forEach(d => map[d.id] = d.data().url);
-          buildGrid(map);
+        .onSnapshot(async (snap)=>{
+          const map={};
+          snap.forEach(d=>map[d.id]=d.data().url);
+          await buildGrid(map);
         });
     }
 
     // =========================
-    // HOME TASK LIST REALTIME
+    // HOME LIST realtime
     // =========================
     db.collection("tasks").orderBy("createdAt","desc").onSnapshot((snap)=>{
       const tasks=[];
@@ -421,15 +535,11 @@
         taskList.appendChild(el);
       });
 
-      taskList.querySelectorAll("[data-open]").forEach(b=>{
-        b.onclick=()=>openTask(b.getAttribute("data-open"));
-      });
-      taskList.querySelectorAll("[data-del]").forEach(b=>{
-        b.onclick=async ()=>{
-          const id=b.getAttribute("data-del");
-          if(!confirm("Hapus tugas ini?")) return;
-          await db.collection("tasks").doc(id).delete();
-        };
+      taskList.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>openTask(b.getAttribute("data-open")));
+      taskList.querySelectorAll("[data-del]").forEach(b=>b.onclick=async ()=>{
+        const id=b.getAttribute("data-del");
+        if(!confirm("Hapus tugas ini?")) return;
+        await db.collection("tasks").doc(id).delete();
       });
     });
 
@@ -446,12 +556,14 @@
     btnSaveTask.onclick=async ()=>{
       const name=inpTaskName.value.trim();
       if(!name) return alert("Nama tugas wajib diisi");
+
       await db.collection("tasks").add({
         name,
         ac: DEFAULT_AC,
         date: today(),
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
+
       addTaskForm.classList.add("d-none");
     };
 
@@ -463,37 +575,41 @@
       unsubPhotos=null;
       currentTaskId=null;
       currentStoreCode=null;
+
       pageGrid.classList.add("d-none");
       pageHome.classList.remove("d-none");
       fab.classList.add("d-none");
     };
 
     // =========================
-    // UPLOAD PHOTO
+    // UPLOAD
     // =========================
     filePicker.onchange = async (e)=>{
-      const file = e.target.files && e.target.files[0];
+      const file=e.target.files && e.target.files[0];
       if(!file||!currentTaskId||!currentStoreCode) return;
 
-      const path = `photos/${currentTaskId}/${currentStoreCode}.jpg`;
-      const fileRef = storage.ref(path);
+      const ref=storage.ref(`photos/${currentTaskId}/${currentStoreCode}.jpg`);
+      await ref.put(file);
 
-      await fileRef.put(file);
-      const url = await fileRef.getDownloadURL();
+      const url=await ref.getDownloadURL();
 
-      await db.collection("tasks").doc(currentTaskId).collection("photos").doc(currentStoreCode)
-        .set({
-          url,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        },{merge:true});
+      // cache local for capture
+      try{
+        const blob = new Blob([file], { type: file.type || "image/jpeg" });
+        await idbSet(cacheKey(currentTaskId, currentStoreCode), blob);
+      }catch(e){}
+
+      await db.collection("tasks").doc(currentTaskId).collection("photos")
+        .doc(currentStoreCode)
+        .set({ url, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },{merge:true});
 
       alert("Upload OK ✅");
     };
 
     // =========================
-    // RESET
+    // RESET BTN
     // =========================
-    btnReset.onclick = async ()=>{
+    btnReset.onclick=async ()=>{
       if(!currentTaskId) return;
 
       const u=prompt("Reset Authorization\nUsername:");
@@ -504,31 +620,57 @@
       if(u!==RESET_USER||p!==RESET_PASS) return alert("Akses ditolak ❌");
       if(!confirm("RESET akan menghapus semua foto pada tugas ini. Lanjut?")) return;
 
-      try{ await resetTaskPhotos(currentTaskId); alert("Reset sukses ✅"); }
-      catch(e){ console.error(e); alert("Reset gagal ❌"); }
+      await resetTaskPhotos(currentTaskId);
+      alert("Reset sukses ✅");
     };
 
     // =========================
-    // DOWNLOAD IMAGE (WA)
+    // SEND WA IMAGE (ANTI BLANK 100%)
     // =========================
     btnSendWA.onclick = async ()=>{
       try{
         btnSendWA.disabled=true;
         btnSendWA.textContent="Processing...";
 
-        fab.classList.add("d-none");
-        await new Promise(r=>setTimeout(r,150));
+        // 1) ensure cache from storage getBlob (no cors)
+        if(currentTaskId){
+          for(const s of STORES){
+            const key=cacheKey(currentTaskId, s.code);
+            const cached=await idbGet(key);
+            if(!cached){
+              try{
+                const blob=await storageGetBlob(currentTaskId, s.code);
+                await idbSet(key, blob);
+              }catch(e){}
+            }
+          }
+        }
 
+        // 2) rebuild grid pakai data firestore terbaru
+        const snap = await db.collection("tasks").doc(currentTaskId).collection("photos").get();
+        const map = {};
+        snap.forEach(d=>map[d.id]=d.data().url);
+        await buildGrid(map);
+
+        // 3) wait all images ready+decode
+        await waitImagesReady(reportArea);
+
+        // 4) hide floating (biar tidak ikut)
+        fab.classList.add("d-none");
+        await new Promise(r=>setTimeout(r,250));
+
+        // 5) capture
         const canvas = await html2canvas(reportArea,{
           scale:2,
-          useCORS:true,
           backgroundColor:"#ffffff",
-          scrollX:0,
-          scrollY:-window.scrollY
+          useCORS:false,
+          allowTaint:true,
+          logging:false
         });
 
         fab.classList.remove("d-none");
 
+        // 6) download (share WA lewat galeri)
         const a=document.createElement("a");
         a.href=canvas.toDataURL("image/png");
         a.download=`photo-implementasi-${today().replaceAll('/','-')}.png`;
@@ -544,7 +686,6 @@
         btnSendWA.textContent="Send WA (Image)";
       }
     };
-
   </script>
 </body>
 </html>
