@@ -546,53 +546,43 @@ SECTION: HEAD
     SECTION: WA SHARE IMAGE (anti blank putih)
     ========================================================= */
     btnSendWA.onclick = async () => {
-      try{
-        btnSendWA.disabled = true;
-        btnSendWA.textContent = "Processing...";
+  try{
+    btnSendWA.disabled = true;
+    btnSendWA.textContent = "Processing...";
 
-        fab.classList.add("d-none");
+    // hide fab
+    fab.classList.add("d-none");
+    await new Promise(r=>setTimeout(r, 150));
 
-        await convertAllImagesToBase64(reportArea);
+    const canvas = await window.html2canvas(reportArea, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      scrollX: 0,
+      scrollY: -window.scrollY
+    });
 
-        const canvas = await window.html2canvas(reportArea, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: "#ffffff",
-          scrollX: 0,
-          scrollY: -window.scrollY
-        });
+    // show fab
+    fab.classList.remove("d-none");
 
-        restoreImages(reportArea);
-        fab.classList.remove("d-none");
+    // ✅ AUTO DOWNLOAD (paling aman di Android)
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = `photo-implementasi-${today().replaceAll('/','-')}.png`;
+    a.click();
 
-        const blob = await new Promise(res => canvas.toBlob(res, "image/png", 1));
-        const filename = `photo-implementasi-${today().replaceAll('/','-')}.png`;
-        const file = new File([blob], filename, { type: "image/png" });
+    alert("✅ Gambar sudah di-download.\nSekarang buka file download lalu Share ke WhatsApp.");
 
-        if(navigator.canShare && navigator.canShare({ files: [file] })){
-          await navigator.share({
-            files: [file],
-            title: "Photo Implementasi",
-            text: `Photo Implementasi - ${lblTask.textContent} (${today()})`
-          });
-        } else {
-          const a = document.createElement("a");
-          a.href = canvas.toDataURL("image/png");
-          a.download = filename;
-          a.click();
-          alert("Device tidak support Share. File di-download.");
-        }
-      }catch(err){
-        console.error(err);
-        try{ restoreImages(reportArea); }catch(e){}
-        fab.classList.remove("d-none");
-        alert("Gagal buat image/share ❌");
-      }finally{
-        btnSendWA.disabled = false;
-        btnSendWA.textContent = "Send WA (Image)";
-      }
-    };
+  }catch(err){
+    console.error(err);
+    fab.classList.remove("d-none");
+    alert("Gagal buat image/share ❌");
+  }finally{
+    btnSendWA.disabled = false;
+    btnSendWA.textContent = "Send WA (Image)";
+  }
+};
+
 
     /* =========================================================
     SECTION: EVENTS (HOME + BACK + UPLOAD + RESET)
@@ -725,3 +715,4 @@ SECTION: HEAD
   </script>
 </body>
 </html>
+
