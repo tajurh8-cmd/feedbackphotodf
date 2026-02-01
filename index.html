@@ -1,63 +1,50 @@
 <!DOCTYPE html>
 <html lang="id">
-
-<!-- =========================================================
-SECTION: HEAD
-========================================================= -->
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Photo Implementasi Online</title>
 
-  <!-- Bootstrap 5 -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
-
-  <!-- html2canvas -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-  <!-- =========================================================
-  SECTION: CSS
-  ========================================================= -->
   <style>
     :root{ --b:#111; }
     body{ background:#f6f7fb; }
 
-    .frame{
-      border:3px solid var(--b);
-      background:#fff;
-      border-radius:18px;
-    }
+    .frame{ border:3px solid var(--b); background:#fff; border-radius:18px; }
+    .grid{ border:3px solid var(--b); border-radius:18px; overflow:hidden; }
 
-    .grid{ border:3px solid var(--b); border-radius:18px; }
+    .grid-row{ display:grid; grid-template-columns:repeat(4,1fr); } /* ALWAYS 4 */
 
     .cell{
       border-right:3px solid var(--b);
       border-bottom:3px solid var(--b);
       background:#fff;
-      min-height:170px;
+      min-height:86px;
       cursor:pointer;
       user-select:none;
     }
-    .cell:last-child{ border-right:none; }
+    .grid-row .cell:nth-child(4n){ border-right:none !important; }
 
     .head{
-      border-bottom:3px solid var(--b);
+      border-bottom:2px solid var(--b);
       font-weight:900;
-      font-size:13px;
+      font-size:9px;
       text-align:center;
-      padding:6px 4px;
+      padding:2px 1px;
       background:#fff;
     }
 
     .content{
-      height: calc(100% - 38px);
+      height: calc(100% - 24px);
       display:flex;
       align-items:center;
       justify-content:center;
       text-align:center;
-      padding:8px;
+      padding:2px;
       font-weight:900;
-      font-size:14px;
+      font-size:9px;
       line-height:1.15;
     }
 
@@ -66,29 +53,21 @@ SECTION: HEAD
       height:100%;
       object-fit:cover;
       display:block;
-      border-radius:8px;
+      border-radius:4px;
     }
 
-    /* icon kamera + add photo */
     .tap-hint{
-      width:52px;
-      height:52px;
-      border:2px solid #111;
-      border-radius:14px;
+      width:28px;height:28px;
+      border:1.5px solid #111;
+      border-radius:9px;
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      font-size:26px;
+      font-size:14px;
       opacity:.95;
     }
-    .add-photo{
-      font-size:12px;
-      font-weight:900;
-      opacity:.75;
-      margin-top:8px;
-    }
+    .add-photo{ font-size:8px; font-weight:900; opacity:.75; margin-top:3px; }
 
-    /* logo kecil */
     .logo-box{
       background:#fff;
       border:2px solid #111;
@@ -97,99 +76,63 @@ SECTION: HEAD
       display:flex;
       align-items:center;
       justify-content:center;
-      min-width:120px;
+      min-width:110px;
       min-height:60px;
     }
-    .logo-box img{
-      width:95px;
-      height:auto;
-      display:block;
-    }
+    .logo-box img{ width:85px; height:auto; display:block; }
 
-    /* ===== Floating buttons ===== */
+    /* Floating buttons */
     .fab{
-      position: fixed;
-      right: 12px;
-      bottom: 12px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      position:fixed; right:12px; bottom:12px; z-index:9999;
+      display:flex; flex-direction:column; gap:8px;
     }
-    .fab .btn,
-    .fab .btn-group .btn{
+    .fab .btn, .fab .btn-group .btn{
       padding:8px 12px !important;
       font-size:12px !important;
       font-weight:900 !important;
       border-radius:14px !important;
       box-shadow:0 6px 18px rgba(0,0,0,.15);
     }
-    .fab .btn-group{
-      display:flex;
-      overflow:hidden;
-      border-radius:14px;
-    }
-    .fab .btn-group .btn{
-      box-shadow:none;
-      border-radius:0 !important;
-    }
+    .fab .btn-group{ display:flex; overflow:hidden; border-radius:14px; }
+    .fab .btn-group .btn{ box-shadow:none; border-radius:0 !important; }
 
-    /* default HP: 2 kolom */
-    @media (max-width: 768px){
-      .grid-row{ grid-template-columns: repeat(2, 1fr) !important; }
-      .cell:nth-child(2n){ border-right:none; }
-      .cell:nth-child(4n){ border-right:3px solid var(--b); }
-    }
+    /* MODE (lebih kecil / besar, kolom tetap 4) */
+    body.mode-normal .cell{ min-height:170px; }
+    body.mode-normal .head{ font-size:13px; padding:6px 4px; border-bottom-width:3px; }
+    body.mode-normal .content{ height: calc(100% - 38px); padding:8px; font-size:14px; }
+    body.mode-normal .tap-hint{ width:52px;height:52px;font-size:26px;border-radius:14px;border-width:2px; }
+    body.mode-normal .add-photo{ font-size:12px;margin-top:8px; }
+    body.mode-normal .content img{ border-radius:8px; }
 
-    /* =========================================================
-       SECTION: MODE SWITCH
-    ========================================================= */
-    body.mode-normal{}
-    body.mode-compact{}
-    body.mode-ultra{}
-
-    body.mode-compact .cell{ min-height:125px; }
+    body.mode-compact .cell{ min-height:125px; border-right-width:2px; border-bottom-width:2px; }
     body.mode-compact .head{ font-size:11px; padding:4px 3px; border-bottom-width:2px; }
     body.mode-compact .content{ height: calc(100% - 30px); padding:5px; font-size:12px; }
-    body.mode-compact .tap-hint{ width:42px; height:42px; font-size:22px; border-radius:12px; }
-    body.mode-compact .add-photo{ font-size:10px; margin-top:6px; }
+    body.mode-compact .tap-hint{ width:42px;height:42px;font-size:22px;border-radius:12px;border-width:2px; }
+    body.mode-compact .add-photo{ font-size:10px;margin-top:6px; }
     body.mode-compact .grid{ border-width:2px; }
-    body.mode-compact .cell{ border-right-width:2px; border-bottom-width:2px; }
     body.mode-compact .content img{ border-radius:6px; }
 
-    body.mode-ultra .cell{ min-height:86px; }
+    body.mode-ultra .cell{ min-height:86px; border-right-width:2px; border-bottom-width:2px; }
     body.mode-ultra .head{ font-size:9px; padding:2px 1px; border-bottom-width:2px; }
     body.mode-ultra .content{ height: calc(100% - 24px); padding:2px; font-size:9px; }
-    body.mode-ultra .tap-hint{ width:28px; height:28px; font-size:14px; border-radius:9px; border-width:1.5px; }
-    body.mode-ultra .add-photo{ font-size:8px; margin-top:3px; }
+    body.mode-ultra .tap-hint{ width:28px;height:28px;font-size:14px;border-radius:9px;border-width:1.5px; }
+    body.mode-ultra .add-photo{ font-size:8px;margin-top:3px; }
     body.mode-ultra .grid{ border-width:2px; }
-    body.mode-ultra .cell{ border-right-width:2px; border-bottom-width:2px; }
     body.mode-ultra .content img{ border-radius:4px; }
-
-    /* Ultra + HP = 4 kolom */
-    @media (max-width: 768px){
-      body.mode-ultra .grid-row{ grid-template-columns: repeat(4, 1fr) !important; }
-      body.mode-ultra .cell:nth-child(2n){ border-right-width:2px; }
-      body.mode-ultra .cell:nth-child(4n){ border-right:none !important; }
-    }
   </style>
 </head>
 
 <body class="mode-ultra">
   <div class="container py-3">
 
-    <!-- =========================================================
-    SECTION: HTML HOME
-    ========================================================= -->
+    <!-- HOME -->
     <div id="pageHome" class="frame p-3">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <div>
           <div class="h4 mb-0 fw-bold">Pilih Tugas</div>
           <small class="text-muted fw-semibold">Online (Firestore + Storage)</small>
         </div>
-        <button id="btnAddTask" class="btn btn-dark fw-bold rounded-3">
-          + Tambah Tugas Baru
-        </button>
+        <button id="btnAddTask" class="btn btn-dark fw-bold rounded-3">+ Tambah Tugas Baru</button>
       </div>
 
       <div id="addTaskForm" class="card border-dark rounded-4 mb-3 d-none">
@@ -214,12 +157,8 @@ SECTION: HEAD
       </div>
     </div>
 
-    <!-- =========================================================
-    SECTION: HTML GRID PAGE
-    ========================================================= -->
+    <!-- GRID -->
     <div id="pageGrid" class="frame p-3 d-none">
-
-      <!-- CAPTURE AREA -->
       <div id="reportArea">
         <div class="d-flex align-items-start justify-content-between gap-3 flex-wrap">
           <div>
@@ -234,9 +173,8 @@ SECTION: HEAD
           </div>
         </div>
 
-        <div class="mt-3 grid overflow-hidden" id="grid"></div>
+        <div class="mt-3 grid" id="grid"></div>
       </div>
-      <!-- END CAPTURE AREA -->
 
       <div class="mt-3">
         <button id="btnBack" class="btn btn-outline-dark fw-bold rounded-3">← Kembali</button>
@@ -246,11 +184,9 @@ SECTION: HEAD
     </div>
   </div>
 
-  <!-- =========================================================
-  SECTION: FLOATING BUTTONS
-  ========================================================= -->
+  <!-- Floating -->
   <div class="fab d-none" id="fab">
-    <div class="btn-group" role="group" aria-label="Mode">
+    <div class="btn-group" role="group">
       <button id="btnModeNormal" class="btn btn-outline-dark fw-bold">Normal</button>
       <button id="btnModeCompact" class="btn btn-outline-dark fw-bold">Compact</button>
       <button id="btnModeUltra" class="btn btn-outline-dark fw-bold">Ultra</button>
@@ -261,9 +197,6 @@ SECTION: HEAD
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- =========================================================
-  SECTION: FIREBASE + APP LOGIC
-  ========================================================= -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
     import {
@@ -274,9 +207,6 @@ SECTION: HEAD
       getStorage, ref, uploadBytes, getDownloadURL, deleteObject
     } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-storage.js";
 
-    /* =========================================================
-    SECTION: CONFIG
-    ========================================================= */
     const firebaseConfig = {
       apiKey: "AIzaSyBdY1mTpiosbYwTIyBN95QLrTjk-jMZgN8",
       authDomain: "pencariandataft.firebaseapp.com",
@@ -311,16 +241,11 @@ SECTION: HEAD
       { code:"1P9J", label:"BTGF", name:"BATANG GERAI KTP" }
     ];
 
-    /* =========================================================
-    SECTION: INIT FIREBASE
-    ========================================================= */
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const storage = getStorage(app);
 
-    /* =========================================================
-    SECTION: UI SELECTOR
-    ========================================================= */
+    // UI
     const pageHome = document.getElementById("pageHome");
     const pageGrid = document.getElementById("pageGrid");
     const taskList = document.getElementById("taskList");
@@ -347,16 +272,10 @@ SECTION: HEAD
     const btnReset = document.getElementById("btnReset");
     const btnSendWA = document.getElementById("btnSendWA");
 
-    /* =========================================================
-    SECTION: STATE
-    ========================================================= */
     let currentTaskId = null;
     let currentStoreCode = null;
     let unsubPhotos = null;
 
-    /* =========================================================
-    SECTION: HELPERS
-    ========================================================= */
     function today(){
       const d = new Date();
       const dd = String(d.getDate()).padStart(2,'0');
@@ -365,48 +284,7 @@ SECTION: HEAD
       return `${dd}/${mm}/${yy}`;
     }
 
-    /* =========================================================
-    SECTION: IMG FIX (Firebase -> base64) (anti blank putih)
-    ========================================================= */
-    async function imgToDataURL(imgEl){
-      const src = imgEl.getAttribute("src");
-      if(!src) return;
-      if(src.startsWith("data:")) return;
-
-      const res = await fetch(src, { mode: "cors" });
-      const blob = await res.blob();
-
-      const dataUrl = await new Promise((resolve)=>{
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(blob);
-      });
-
-      imgEl.setAttribute("data-src-original", src);
-      imgEl.src = dataUrl;
-    }
-
-    async function convertAllImagesToBase64(container){
-      const imgs = [...container.querySelectorAll("img")];
-      for(const img of imgs){
-        try{ await imgToDataURL(img); }catch(e){ console.log("convert img failed", e); }
-      }
-    }
-
-    function restoreImages(container){
-      const imgs = [...container.querySelectorAll("img")];
-      for(const img of imgs){
-        const orig = img.getAttribute("data-src-original");
-        if(orig){
-          img.src = orig;
-          img.removeAttribute("data-src-original");
-        }
-      }
-    }
-
-    /* =========================================================
-    SECTION: MODE
-    ========================================================= */
+    // MODE
     function setMode(mode){
       document.body.classList.remove("mode-normal","mode-compact","mode-ultra");
       document.body.classList.add(`mode-${mode}`);
@@ -416,40 +294,27 @@ SECTION: HEAD
         b.classList.remove("btn-dark");
         b.classList.add("btn-outline-dark");
       });
-
-      const active =
-        mode === "normal" ? btnModeNormal :
-        mode === "compact" ? btnModeCompact : btnModeUltra;
-
+      const active = mode==="normal"?btnModeNormal:(mode==="compact"?btnModeCompact:btnModeUltra);
       active.classList.add("btn-dark");
       active.classList.remove("btn-outline-dark");
     }
-
-    btnModeNormal.onclick = ()=> setMode("normal");
-    btnModeCompact.onclick = ()=> setMode("compact");
-    btnModeUltra.onclick  = ()=> setMode("ultra");
+    btnModeNormal.onclick=()=>setMode("normal");
+    btnModeCompact.onclick=()=>setMode("compact");
+    btnModeUltra.onclick =()=>setMode("ultra");
     setMode(localStorage.getItem("gridMode") || "ultra");
 
-    /* =========================================================
-    SECTION: GRID BUILD
-    ========================================================= */
+    // GRID
     function buildGrid(photoMap){
       grid.innerHTML = "";
-
       for(let i=0;i<STORES.length;i+=4){
         const row = document.createElement("div");
         row.className = "grid-row";
-        row.style.display = "grid";
-        row.style.gridTemplateColumns = "repeat(4, 1fr)";
 
         const chunk = STORES.slice(i,i+4);
-
         chunk.forEach(store=>{
           const url = photoMap[store.code];
-
           const cell = document.createElement("div");
           cell.className = "cell";
-
           cell.innerHTML = `
             <div class="head">${store.code} ${store.label}</div>
             <div class="content">
@@ -462,21 +327,19 @@ SECTION: HEAD
               }
             </div>
           `;
-
-          cell.onclick = ()=>{
+          cell.onclick=()=>{
             currentStoreCode = store.code;
-            filePicker.value = "";
+            filePicker.value="";
             filePicker.click();
           };
-
           row.appendChild(cell);
         });
 
-        const missing = 4 - chunk.length;
-        for(let k=0;k<missing;k++){
+        // pad to 4 cells
+        while(row.children.length < 4){
           const blank = document.createElement("div");
-          blank.className = "cell";
-          blank.innerHTML = `<div class="head">&nbsp;</div><div class="content">&nbsp;</div>`;
+          blank.className="cell";
+          blank.innerHTML=`<div class="head">&nbsp;</div><div class="content">&nbsp;</div>`;
           row.appendChild(blank);
         }
 
@@ -484,15 +347,12 @@ SECTION: HEAD
       }
     }
 
-    /* =========================================================
-    SECTION: RESET PHOTO
-    ========================================================= */
+    // RESET
     async function resetTaskPhotos(taskId){
       const photosRef = collection(db, "tasks", taskId, "photos");
       const snap = await getDocs(photosRef);
-
       const batch = writeBatch(db);
-      snap.docs.forEach(d => batch.delete(d.ref));
+      snap.docs.forEach(d=>batch.delete(d.ref));
       await batch.commit();
 
       for(const s of STORES){
@@ -501,22 +361,20 @@ SECTION: HEAD
       }
     }
 
-    /* =========================================================
-    SECTION: OPEN TASK + DAILY RESET AUTO
-    ========================================================= */
+    // OPEN TASK
     async function openTask(taskId){
       currentTaskId = taskId;
 
       const all = await getDocs(query(collection(db, "tasks")));
-      const tdoc = all.docs.find(d=>d.id === taskId);
+      const tdoc = all.docs.find(d=>d.id===taskId);
       if(!tdoc) return;
 
       const taskRef = doc(db, "tasks", taskId);
       const task = { id: tdoc.id, ...tdoc.data() };
 
+      // daily reset
       const tdy = today();
       const lastDate = task.date || "";
-
       if(lastDate !== tdy){
         await resetTaskPhotos(taskId);
         await updateDoc(taskRef, { date: tdy });
@@ -537,148 +395,122 @@ SECTION: HEAD
       if(unsubPhotos) unsubPhotos();
       unsubPhotos = onSnapshot(photosRef, (snap)=>{
         const map = {};
-        snap.docs.forEach(d=> map[d.id] = d.data().url );
+        snap.docs.forEach(d=>map[d.id]=d.data().url);
         buildGrid(map);
       });
     }
 
-    /* =========================================================
-    SECTION: WA SHARE IMAGE (anti blank putih)
-    ========================================================= */
-    btnSendWA.onclick = async () => {
-  try{
-    btnSendWA.disabled = true;
-    btnSendWA.textContent = "Processing...";
+    // WA (Download image - paling stabil)
+    btnSendWA.onclick = async ()=>{
+      try{
+        btnSendWA.disabled=true;
+        btnSendWA.textContent="Processing...";
 
-    // hide fab
-    fab.classList.add("d-none");
-    await new Promise(r=>setTimeout(r, 150));
+        fab.classList.add("d-none");
+        await new Promise(r=>setTimeout(r,150));
 
-    const canvas = await window.html2canvas(reportArea, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      scrollX: 0,
-      scrollY: -window.scrollY
-    });
+        const canvas = await window.html2canvas(reportArea, {
+          scale:2,
+          useCORS:true,
+          backgroundColor:"#ffffff",
+          scrollX:0,
+          scrollY:-window.scrollY
+        });
 
-    // show fab
-    fab.classList.remove("d-none");
+        fab.classList.remove("d-none");
 
-    // ✅ AUTO DOWNLOAD (paling aman di Android)
-    const a = document.createElement("a");
-    a.href = canvas.toDataURL("image/png");
-    a.download = `photo-implementasi-${today().replaceAll('/','-')}.png`;
-    a.click();
+        const a=document.createElement("a");
+        a.href=canvas.toDataURL("image/png");
+        a.download=`photo-implementasi-${today().replaceAll('/','-')}.png`;
+        a.click();
 
-    alert("✅ Gambar sudah di-download.\nSekarang buka file download lalu Share ke WhatsApp.");
-
-  }catch(err){
-    console.error(err);
-    fab.classList.remove("d-none");
-    alert("Gagal buat image/share ❌");
-  }finally{
-    btnSendWA.disabled = false;
-    btnSendWA.textContent = "Send WA (Image)";
-  }
-};
-
-
-    /* =========================================================
-    SECTION: EVENTS (HOME + BACK + UPLOAD + RESET)
-    ========================================================= */
-    btnAddTask.onclick = () => {
-      addTaskForm.classList.remove("d-none");
-      inpTaskName.value = "";
-      inpTaskName.focus();
+        alert("✅ Gambar sudah di-download.\nBuka file Download lalu Share ke WhatsApp.");
+      }catch(e){
+        console.error(e);
+        fab.classList.remove("d-none");
+        alert("Gagal buat image ❌");
+      }finally{
+        btnSendWA.disabled=false;
+        btnSendWA.textContent="Send WA (Image)";
+      }
     };
 
-    btnCancelTask.onclick = () => addTaskForm.classList.add("d-none");
+    // EVENTS
+    btnAddTask.onclick=()=>{
+      addTaskForm.classList.remove("d-none");
+      inpTaskName.value="";
+      inpTaskName.focus();
+    };
+    btnCancelTask.onclick=()=>addTaskForm.classList.add("d-none");
 
-    btnSaveTask.onclick = async () => {
+    btnSaveTask.onclick=async ()=>{
       const name = inpTaskName.value.trim();
       if(!name) return alert("Nama tugas wajib diisi");
 
-      await addDoc(collection(db, "tasks"), {
+      await addDoc(collection(db,"tasks"),{
         name,
         ac: DEFAULT_AC,
         date: today(),
         createdAt: serverTimestamp()
       });
-
       addTaskForm.classList.add("d-none");
     };
 
-    btnBack.onclick = ()=>{
+    btnBack.onclick=()=>{
       if(unsubPhotos) unsubPhotos();
-      unsubPhotos = null;
-      currentTaskId = null;
-      currentStoreCode = null;
-
+      unsubPhotos=null;
+      currentTaskId=null;
+      currentStoreCode=null;
       pageGrid.classList.add("d-none");
       pageHome.classList.remove("d-none");
       fab.classList.add("d-none");
     };
 
-    btnReset.onclick = async () => {
+    btnReset.onclick=async ()=>{
       if(!currentTaskId) return;
-
-      const u = prompt("Reset Authorization\nUsername:");
-      if(u === null) return;
-      const p = prompt("Password:");
-      if(p === null) return;
-
-      if(u !== RESET_USER || p !== RESET_PASS){
-        alert("Akses ditolak ❌");
-        return;
-      }
-
+      const u=prompt("Reset Authorization\nUsername:");
+      if(u===null) return;
+      const p=prompt("Password:");
+      if(p===null) return;
+      if(u!==RESET_USER||p!==RESET_PASS) return alert("Akses ditolak ❌");
       if(!confirm("RESET akan menghapus semua foto pada tugas ini. Lanjut?")) return;
 
-      try{
-        await resetTaskPhotos(currentTaskId);
-        alert("Reset sukses ✅");
-      }catch(err){
-        console.error(err);
-        alert("Reset gagal ❌");
-      }
+      try{ await resetTaskPhotos(currentTaskId); alert("Reset sukses ✅"); }
+      catch(e){ console.error(e); alert("Reset gagal ❌"); }
     };
 
-    filePicker.onchange = async (e)=>{
+    filePicker.onchange=async (e)=>{
       const file = e.target.files?.[0];
-      if(!file || !currentTaskId || !currentStoreCode) return;
+      if(!file||!currentTaskId||!currentStoreCode) return;
 
-      const path = `photos/${currentTaskId}/${currentStoreCode}.jpg`;
-      const storageRef = ref(storage, path);
+      const path=`photos/${currentTaskId}/${currentStoreCode}.jpg`;
+      const storageRef=ref(storage,path);
 
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      await uploadBytes(storageRef,file);
+      const url=await getDownloadURL(storageRef);
 
-      await setDoc(doc(db, "tasks", currentTaskId, "photos", currentStoreCode), {
-        storeCode: currentStoreCode,
-        label: STORES.find(s=>s.code===currentStoreCode)?.label || "",
-        storeName: STORES.find(s=>s.code===currentStoreCode)?.name || "",
+      await setDoc(doc(db,"tasks",currentTaskId,"photos",currentStoreCode),{
+        storeCode:currentStoreCode,
+        label: STORES.find(s=>s.code===currentStoreCode)?.label||"",
+        storeName: STORES.find(s=>s.code===currentStoreCode)?.name||"",
         url,
         updatedAt: serverTimestamp()
-      }, { merge:true });
+      },{merge:true});
 
       alert("Upload OK ✅");
     };
 
-    /* =========================================================
-    SECTION: TASK LIST REALTIME
-    ========================================================= */
+    // TASK LIST realtime
     function renderTasks(tasks){
-      taskList.innerHTML = "";
-      if(tasks.length === 0){
-        taskList.innerHTML = `<div class="text-muted fw-bold">Belum ada tugas. Klik + Tambah Tugas Baru.</div>`;
+      taskList.innerHTML="";
+      if(tasks.length===0){
+        taskList.innerHTML=`<div class="text-muted fw-bold">Belum ada tugas. Klik + Tambah Tugas Baru.</div>`;
         return;
       }
-
       tasks.forEach(t=>{
-        const el = document.createElement("div");
-        el.className = "card border-dark rounded-4";
-        el.innerHTML = `
+        const el=document.createElement("div");
+        el.className="card border-dark rounded-4";
+        el.innerHTML=`
           <div class="card-body py-3 d-flex align-items-center justify-content-between gap-2 flex-wrap">
             <div>
               <div class="fw-bold fs-5">${t.name}</div>
@@ -693,26 +525,24 @@ SECTION: HEAD
         taskList.appendChild(el);
       });
 
-      taskList.querySelectorAll("button[data-open]").forEach(btn=>{
-        btn.onclick = ()=> openTask(btn.getAttribute("data-open"));
+      taskList.querySelectorAll("button[data-open]").forEach(b=>{
+        b.onclick=()=>openTask(b.getAttribute("data-open"));
       });
 
-      taskList.querySelectorAll("button[data-del]").forEach(btn=>{
-        btn.onclick = async ()=>{
-          const id = btn.getAttribute("data-del");
+      taskList.querySelectorAll("button[data-del]").forEach(b=>{
+        b.onclick=async ()=>{
+          const id=b.getAttribute("data-del");
           if(!confirm("Hapus tugas ini?")) return;
-          await deleteDoc(doc(db, "tasks", id));
+          await deleteDoc(doc(db,"tasks",id));
         };
       });
     }
 
-    const qTasks = query(collection(db, "tasks"), orderBy("createdAt", "desc"));
-    onSnapshot(qTasks, (snap)=>{
-      const tasks = snap.docs.map(d=>({ id:d.id, ...d.data() }));
+    const qTasks=query(collection(db,"tasks"), orderBy("createdAt","desc"));
+    onSnapshot(qTasks,(snap)=>{
+      const tasks=snap.docs.map(d=>({id:d.id,...d.data()}));
       renderTasks(tasks);
     });
-
   </script>
 </body>
 </html>
-
